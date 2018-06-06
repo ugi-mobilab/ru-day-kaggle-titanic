@@ -27,6 +27,11 @@ dependencies {
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile "org.deeplearning4j:deeplearning4j-core:${dl4j_version}"
+
+    compile "org.deeplearning4j:deeplearning4j-ui_2.11:${dl4j_version}"
+
+    compile "org.datavec:datavec-api:${dl4j_version}"
+    compile "org.datavec:datavec-spark_2.11:1.0.0-beta_spark_2"
     compile "org.nd4j:nd4j-native-platform:${dl4j_version}"
     compile "org.slf4j:slf4j-simple:1.7.25"
     compile "org.slf4j:slf4j-api:1.7.25"
