@@ -1,17 +1,10 @@
 package com.mobilabsolutions.mlfun
 
 import org.apache.spark.SparkConf
+import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.api.java.JavaSparkContext
-import org.datavec.api.transform.ui.HtmlAnalysis
-import sun.management.MemoryUsageCompositeData.getMax
-import org.datavec.api.transform.analysis.columns.DoubleAnalysis
-import org.datavec.api.transform.analysis.DataAnalysis
-import org.datavec.api.writable.Writable
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader
-import org.datavec.api.records.reader.RecordReader
 import org.datavec.api.transform.TransformProcess
-import org.datavec.api.transform.condition.ConditionOp
-import org.datavec.api.transform.condition.column.IntegerColumnCondition
 import org.datavec.api.transform.condition.column.InvalidValueColumnCondition
 import org.datavec.api.transform.schema.Schema
 import org.datavec.api.writable.IntWritable
@@ -21,13 +14,21 @@ import org.datavec.spark.transform.SparkTransformExecutor
 import org.datavec.spark.transform.misc.StringToWritablesFunction
 import org.slf4j.LoggerFactory
 import java.io.File
+import kotlin.math.roundToInt
 
 
 class DataAnalysisSample {
 
-    private val log = LoggerFactory.getLogger(DataAnalysisSample::class.java)
+    val conf = SparkConf()
+
+    init {
+        conf.setMaster("local[*]")
+        conf.setAppName("DataVec Example")
+    }
 
     companion object {
+        private val log = LoggerFactory.getLogger(DataAnalysisSample::class.java)
+
         @Throws(Exception::class)
         @JvmStatic
         fun main(args: Array<String>) {
@@ -35,8 +36,11 @@ class DataAnalysisSample {
         }
     }
 
+    private fun analyze() {
+        val sparkContext = JavaSparkContext(conf)
 
-    fun analyze() {
+        val parsedStringData = sparkContext.textFile(File("data/sedat-train.csv").absolutePath)
+
         val schema = Schema.Builder()
                 .addColumnsInteger("PassengerId", "Survived", "Pclass")
                 .addColumnsString("Name", "Sex")
@@ -51,7 +55,7 @@ class DataAnalysisSample {
         val transformProcess = TransformProcess.Builder(schema)
                 .conditionalReplaceValueTransform(
                         "Age",
-                        IntWritable(0),
+                        IntWritable(getAverageAge(parsedStringData)),
                         InvalidValueColumnCondition("Age")
                 )
                 .conditionalReplaceValueTransform(
@@ -100,5 +104,15 @@ class DataAnalysisSample {
 
         HtmlAnalysis.createHtmlAnalysisFile(dataAnalysis, File("DataVecTitanicAnalysis.html"))
 
+    }
+
+    private fun getAverageAge(parsedStringData: JavaRDD<String>): Int {
+        val ages = parsedStringData.cache().map { it.split(",")[6] }
+                .map { it.toDoubleOrNull() }
+                .filter { it != null }
+
+        val rowCountWithAge = ages.count()
+
+        return ages.reduce { v1, v2 -> v1!!.plus(v2!!) }!!.div(rowCountWithAge).roundToInt()
     }
 }
