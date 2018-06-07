@@ -30,11 +30,13 @@ class TitanicNeuralNetSample {
         }
     }
 
-    val titanicDataSetIterator = TitanicDataSetProvider().trainDataSet
+    val titanicDataSetProvider = TitanicDataSetProvider()
+    val titanicDataSetIterator = titanicDataSetProvider.trainDataSet
+    val titanicTestData = titanicDataSetProvider.testData
 
     val titanicNeuralNetworkConf = buildModelConfiguration()
 
-    fun buildModelConfiguration() : MultiLayerConfiguration {
+    fun buildModelConfiguration(): MultiLayerConfiguration {
         return NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .updater(Nesterovs(0.01, 0.9))
@@ -83,7 +85,7 @@ class TitanicNeuralNetSample {
         model.setListeners(ScoreIterationListener(1), StatsListener(statsStorage))
 
 
-        for (i in 0 .. 500) {
+        for (i in 0..500) {
             model.fit(titanicDataSetIterator)
         }
 
@@ -97,6 +99,10 @@ class TitanicNeuralNetSample {
 
         log.info(eval.stats())
 
+        titanicTestData.forEach { entry ->
+            val result = model.output(entry.component2())
+            log.info("${entry.component1()} : ${result.toString()}")
+        }
 
     }
 
