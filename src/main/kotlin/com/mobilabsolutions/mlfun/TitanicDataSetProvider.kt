@@ -21,7 +21,7 @@ class TitanicDataSetProvider  {
 
     init {
 
-        trainDataSet = getDataSet(File("data/train-ugi.csv"), 891, 0, 2)
+        trainDataSet = getDataSet(File("data/sedat-trained.csv"), 891, 0, 2)
 
 
     }

@@ -40,7 +40,7 @@ class TitanicNeuralNetSample {
                 .updater(Nesterovs(0.01, 0.9))
                 .list()
                 .layer(0, DenseLayer.Builder()
-                        .nIn(7)
+                        .nIn(6)
                         .nOut(100)
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
@@ -83,7 +83,7 @@ class TitanicNeuralNetSample {
         model.setListeners(ScoreIterationListener(1), StatsListener(statsStorage))
 
 
-        for (i in 0 .. 500) {
+        for (i in 0 .. 2000) {
             model.fit(titanicDataSetIterator)
         }
 
