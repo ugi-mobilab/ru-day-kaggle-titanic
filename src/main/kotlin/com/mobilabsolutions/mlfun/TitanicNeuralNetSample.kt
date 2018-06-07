@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory
 import org.deeplearning4j.ui.api.UIServer
 import org.deeplearning4j.ui.stats.StatsListener
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage
+import java.io.File
 
 
 class TitanicNeuralNetSample {
@@ -85,7 +86,7 @@ class TitanicNeuralNetSample {
         model.setListeners(ScoreIterationListener(1), StatsListener(statsStorage))
 
 
-        for (i in 0..500) {
+        for (i in 0..2000) {
             model.fit(titanicDataSetIterator)
         }
 
@@ -98,11 +99,17 @@ class TitanicNeuralNetSample {
         }
 
         log.info(eval.stats())
+        val resultStringBuilder = StringBuilder()
 
         titanicTestData.forEach { entry ->
             val result = model.output(entry.component2())
             log.info("${entry.component1()} : ${result.toString()}")
+            val decision = if (result.getDouble(0) > result.getDouble(1)) 0 else 1
+            log.info("${entry.component1()} : $decision")
+            resultStringBuilder.append("${entry.component1()},$decision\n")
         }
+
+        File("data/result.csv").writeText(resultStringBuilder.toString())
 
     }
 

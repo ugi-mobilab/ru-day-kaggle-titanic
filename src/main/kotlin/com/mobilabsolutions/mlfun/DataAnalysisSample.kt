@@ -14,6 +14,7 @@ import org.datavec.api.writable.Text
 import org.datavec.api.writable.Writable
 import org.datavec.spark.transform.AnalyzeSpark
 import org.datavec.spark.transform.SparkTransformExecutor
+import org.datavec.spark.transform.analysis.WritableToStringFunction
 import org.datavec.spark.transform.misc.StringToWritablesFunction
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.cpu.nativecpu.NDArray
@@ -28,7 +29,7 @@ import kotlin.math.roundToInt
 class DataAnalysisSample {
 
     val conf = SparkConf()
-    var testData : Map<Int, INDArray> = HashMap()
+    var testData : MutableMap<Int, INDArray> = HashMap()
 
     init {
         conf.setMaster("local[*]")
@@ -140,19 +141,22 @@ class DataAnalysisSample {
         )
         File("data/test-ugi.csv").writeText(testTransformedCsv)
 
-        val testMap : MutableMap<Int, INDArray> = HashMap()
 
-        testTransformedData.foreach {
+
+        val stringTestData = testTransformedData.map { it.map { WritableToStringFunction().call(it) }}
+        val collectedTestData = stringTestData.collect()
+        val result = collectedTestData.map {
             row ->
             val passangerId = row.get(0).toString().toInt()
             val input = Nd4j.zeros(row.size - 1)
             for (i in 1 until row.size - 1) {
                 input.putScalar(i, row.get(i).toFloat())
             }
-            testMap.put(passangerId, input)
+            Pair(passangerId, input)
         }
 
-        testData = testMap
+
+        result.forEach { pair -> testData.put(pair.first, pair.second) }
 
 
 
