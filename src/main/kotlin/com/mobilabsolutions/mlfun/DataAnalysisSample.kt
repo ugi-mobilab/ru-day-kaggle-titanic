@@ -15,6 +15,7 @@ import org.datavec.api.transform.condition.column.IntegerColumnCondition
 import org.datavec.api.transform.condition.column.InvalidValueColumnCondition
 import org.datavec.api.transform.schema.Schema
 import org.datavec.api.writable.IntWritable
+import org.datavec.api.writable.Text
 import org.datavec.spark.transform.AnalyzeSpark
 import org.datavec.spark.transform.SparkTransformExecutor
 import org.datavec.spark.transform.misc.StringToWritablesFunction
@@ -28,7 +29,8 @@ class DataAnalysisSample {
 
     companion object {
         @Throws(Exception::class)
-        @JvmStatic fun main(args: Array<String>) {
+        @JvmStatic
+        fun main(args: Array<String>) {
             DataAnalysisSample().analyze()
         }
     }
@@ -36,7 +38,7 @@ class DataAnalysisSample {
 
     fun analyze() {
         val schema = Schema.Builder()
-                .addColumnsInteger("PassangerId", "Survived", "Pclass")
+                .addColumnsInteger("PassengerId", "Survived", "Pclass")
                 .addColumnsString("Name", "Sex")
                 .addColumnsInteger("Age", "SibSp", "Parch")
                 .addColumnString("Ticket")
@@ -52,10 +54,15 @@ class DataAnalysisSample {
                         IntWritable(0),
                         InvalidValueColumnCondition("Age")
                 )
+                .conditionalReplaceValueTransform(
+                        "Embarked",
+                        Text("C"),
+                        InvalidValueColumnCondition("Embarked")
+                )
+                .stringMapTransform("Sex", mapOf("male" to "0", "female" to "1"))
+                .stringMapTransform("Embarked", mapOf("C" to "0", "Q" to "1", "S" to "2", "" to "0"))
+                .removeColumns("Name", "PassengerId", "Ticket", "Cabin")
                 .build()
-//                .conditional("Age", IntWritable())
-
-
 
 
         val conf = SparkConf()
@@ -65,18 +72,23 @@ class DataAnalysisSample {
         val sc = JavaSparkContext(conf)
 
         var stringData = sc.textFile(File("data/train.csv").absolutePath)
-        log.info(stringData.fold("After loading: ", {first,second -> first + "\n" + second}))
-        stringData = stringData.filter { !it.contains("PassengerId") }
-        stringData = stringData.filter { !it.contains(",,") }
-        log.info(stringData.fold("After processing: ", {first,second -> first + "\n" + second}))
-        //We first need to parse this comma-delimited (CSV) format; we can do this using CSVRecordReader:
+        stringData = stringData.filter { !it.contains("Survived") }
         val rr = CSVRecordReader()
         val parsedInputData = stringData.map(StringToWritablesFunction(rr))
 
         val transformedData = SparkTransformExecutor.execute(parsedInputData, transformProcess)
 
-        val maxHistogramBuckets = 10
-        val dataAnalysis = AnalyzeSpark.analyze(schema, transformedData)
+        val dataAnalysis = AnalyzeSpark.analyze(transformProcess.finalSchema, transformedData)
+
+        val transformedCsv = transformedData.collect().fold("",
+                { acc: String, row: List<Writable> ->
+                    acc + "\n" + row.fold("",
+                            { a: String, b: Writable -> a + ", " + b.toString() }).removeRange(0..1)
+                }
+        )
+        File("data/train-ugi.csv").writeText(transformedCsv)
+
+
 
         println(dataAnalysis)
 
@@ -87,5 +99,6 @@ class DataAnalysisSample {
 //        val mean = da.mean
 
         HtmlAnalysis.createHtmlAnalysisFile(dataAnalysis, File("DataVecTitanicAnalysis.html"))
+
     }
 }
