@@ -70,7 +70,7 @@ class DataAnalysisSample {
                 .stringMapTransform("Sex", mapOf("male" to "0", "female" to "1"))
                 .stringMapTransform("Embarked", mapOf("C" to "0", "Q" to "1", "S" to "2", "" to "0"))
                 .transform(MinMaxNormalizer("Age", 0.0, 100.0, 0.0, 1.0))
-                .transform(MinMaxNormalizer("Fare", 0.0, 93.5, 0.0, 1.0))
+                .transform(MinMaxNormalizer("Fare", 0.0, 95.0, 0.0, 1.0))
                 .removeColumns("Name", "PassengerId", "Ticket", "Cabin")
                 .build()
 
