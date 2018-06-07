@@ -7,8 +7,12 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.transform.TransformProcess
 import org.datavec.api.transform.condition.column.InvalidValueColumnCondition
 import org.datavec.api.transform.schema.Schema
+import org.datavec.api.transform.transform.doubletransform.MinMaxNormalizer
+import org.datavec.api.transform.transform.doubletransform.StandardizeNormalizer
+import org.datavec.api.transform.ui.HtmlAnalysis
 import org.datavec.api.writable.IntWritable
 import org.datavec.api.writable.Text
+import org.datavec.api.writable.Writable
 import org.datavec.spark.transform.AnalyzeSpark
 import org.datavec.spark.transform.SparkTransformExecutor
 import org.datavec.spark.transform.misc.StringToWritablesFunction
@@ -39,7 +43,7 @@ class DataAnalysisSample {
     private fun analyze() {
         val sparkContext = JavaSparkContext(conf)
 
-        val parsedStringData = sparkContext.textFile(File("data/sedat-train.csv").absolutePath)
+        val parsedStringData = sparkContext.textFile(File("data/train.csv").absolutePath)
 
         val schema = Schema.Builder()
                 .addColumnsInteger("PassengerId", "Survived", "Pclass")
@@ -65,17 +69,15 @@ class DataAnalysisSample {
                 )
                 .stringMapTransform("Sex", mapOf("male" to "0", "female" to "1"))
                 .stringMapTransform("Embarked", mapOf("C" to "0", "Q" to "1", "S" to "2", "" to "0"))
+                .transform(MinMaxNormalizer("Age", 0.0, 100.0, 0.0, 1.0))
+                .transform(MinMaxNormalizer("Fare", 0.0, 93.5, 0.0, 1.0))
                 .removeColumns("Name", "PassengerId", "Ticket", "Cabin")
                 .build()
 
 
-        val conf = SparkConf()
-        conf.setMaster("local[*]")
-        conf.setAppName("DataVec Example")
 
-        val sc = JavaSparkContext(conf)
 
-        var stringData = sc.textFile(File("data/train.csv").absolutePath)
+        var stringData = sparkContext.textFile(File("data/train.csv").absolutePath)
         stringData = stringData.filter { !it.contains("Survived") }
         val rr = CSVRecordReader()
         val parsedInputData = stringData.map(StringToWritablesFunction(rr))
@@ -95,12 +97,6 @@ class DataAnalysisSample {
 
 
         println(dataAnalysis)
-
-        //We can get statistics on a per-column basis:
-//        val da = dataAnalysis.getColumnAnalysis("Sepal length") as DoubleAnalysis
-//        val minValue = da.min
-//        val maxValue = da.max
-//        val mean = da.mean
 
         HtmlAnalysis.createHtmlAnalysisFile(dataAnalysis, File("DataVecTitanicAnalysis.html"))
 

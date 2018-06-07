@@ -40,7 +40,7 @@ class TitanicNeuralNetSample {
                 .updater(Nesterovs(0.01, 0.9))
                 .list()
                 .layer(0, DenseLayer.Builder()
-                        .nIn(2)
+                        .nIn(7)
                         .nOut(100)
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
