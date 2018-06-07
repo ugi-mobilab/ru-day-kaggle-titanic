@@ -36,7 +36,7 @@ class DataAnalysisSample {
     private fun analyze() {
         val sparkContext = JavaSparkContext(conf)
 
-        val parsedStringData = sparkContext.textFile(File("data/train.csv").absolutePath)
+        val parsedStringData = sparkContext.textFile(File("data/sedat-train.csv").absolutePath)
 
         val schema = Schema.Builder()
                 .addColumnsInteger("PassangerId", "Survived", "Pclass")
@@ -61,7 +61,7 @@ class DataAnalysisSample {
 
         val transformedData = SparkTransformExecutor.execute(parsedInputData, transformProcess)
 
-        //transformedData.collect().forEach { println(it) }
+        transformedData.collect().forEach { println(it) }
     }
 
     private fun getAverageAge(parsedStringData: JavaRDD<String>): Int {
